@@ -1,0 +1,11 @@
+I like cats.
+I like dogs.
+I hate monkeys.
+Once that works, we'll deal with punctuation and then move to second-order Markov chains, which is where the generated text starts becoming substantially more interesting.
+But that's not actually modeling sentence termination.
+Germany, officially the Federal Republic of Germany, is a country in Western and Central Europe.
+Settlement in the territory of modern Germany began in the Lower Paleolithic, with various tribes inhabiting it from the Neolithic onward, chiefly the Celts, and Germanic tribes inhabiting the north.
+Romans named the area Germania.
+In 962, the Kingdom of Germany formed the bulk of the Holy Roman Empire.
+During the 16th century, northern German regions became the centre of the Protestant Reformation.
+Following the Napoleonic Wars and the dissolution of the Holy Roman Empire in 1806, the German Confederation was formed in 1815.
