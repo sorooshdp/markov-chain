@@ -4,18 +4,35 @@ import path from "node:path";
 
 type tokensMap = Map<string, Map<string, number>>;
 
+enum Tokens {
+  Start = "<START>",
+  End = "<END>",
+  Comma = "<COMMA>",
+  Exclamation = "<EXCLAMATION>",
+  Question = "<QUESTION",
+}
+
 const tokenizer = (): Array<string> => {
-  let tokens = [];
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
-  const filePath = path.join(__dirname, "dataset.txt");
+  const filePath = path.join(__dirname, "../datasets/test.txt");
   const text = readFileSync(filePath, "utf-8");
+  let tokens: Array<string> = [];
 
   for (const line of text.split("\r\n")) {
+    tokens.push(Tokens.Start);
     for (const word of line.split(" ")) {
-      if (word.endsWith(".")) {
-        tokens.push(word.slice(0, word.length - 1), "<END>");
+      if (word === "") {
+        continue;
+      } else if (word.endsWith(".")) {
+        tokens.push(word.slice(0, word.length - 1), Tokens.End);
+      } else if (word.endsWith(",")) {
+        tokens.push(word.slice(0, word.length - 1), Tokens.Comma);
+      } else if (word.endsWith("!")) {
+        tokens.push(word.slice(0, word.length - 1), Tokens.Exclamation);
+      } else if (word.endsWith("?")) {
+        tokens.push(word.slice(0, word.length - 1), Tokens.Question);
       } else {
         tokens.push(word);
       }
@@ -29,7 +46,7 @@ const firstOrderChain = (tokens: Array<string>): tokensMap => {
   const wordMap: tokensMap = new Map();
 
   for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i] === "<END>") continue;
+    if (tokens[i] === Tokens.End) continue;
 
     if (wordMap.has(tokens[i])) {
       const nextToken = wordMap.get(tokens[i]);
@@ -62,23 +79,57 @@ const secondOrderChain = (tokens: Array<string>): tokensMap => {
 
   for (let i = 0; i < tokens.length; i++) {
     if (tokens[i + 2]) {
-      tokenPair = tokens[i].concat(` ${tokens[i + 1]}`);
+      if (tokens[i] === Tokens.Start) {
+        tokenPair = "<START> <START>";
+      } else if (tokens[i] === Tokens.End) {
+        continue;
+      } else {
+        tokenPair = tokens[i].concat(` ${tokens[i + 1]}`);
+      }
+
+      if (tokenPair.includes(Tokens.End)) continue;
+
+      // console.log("token pair: " + tokenPair);
+      // if (tokenPair === "<START> <START>") {
+      //   console.log("next token of pair: " + tokens[i + 1]);
+      // } else {
+      //   console.log("next token of pair: " + tokens[i + 2]);
+      // }
 
       if (wordMap.has(tokenPair)) {
         const nextToken = wordMap.get(tokenPair);
-        const nextTokenCount = nextToken?.get(tokens[i + 2]);
-        if (nextToken && nextTokenCount) {
-          if (nextToken.has(tokens[i + 2])) {
-            nextToken.set(tokens[i + 2], nextTokenCount + 1);
+        let nextTokenCount: number;
+        if (tokenPair === "<START> <START>") {
+          nextTokenCount = nextToken?.get(tokens[i + 1])!;
+          if (nextToken && nextTokenCount) {
+            if (nextToken.has(tokens[i + 1])) {
+              nextToken.set(tokens[i + 1], nextTokenCount + 1);
+            } else {
+              nextToken.set(tokens[i + 1], 1);
+            }
+          }
+        } else {
+          nextTokenCount = nextToken?.get(tokens[i + 2])!;
+          if (nextToken && nextTokenCount) {
+            if (nextToken.has(tokens[i + 2])) {
+              nextToken.set(tokens[i + 2], nextTokenCount + 1);
+            } else {
+              nextToken.set(tokens[i + 2], 1);
+            }
           } else {
-            nextToken.set(tokens[i + 2], 1);
+            nextToken?.set(tokens[i + 2], 1);
           }
         }
       } else {
         const tempMap = new Map();
         if (tokens[i + 2]) {
-          tempMap.set(tokens[i + 2], 1);
-          wordMap.set(tokenPair, tempMap);
+          if (tokenPair === "<START> <START>") {
+            tempMap.set(tokens[i + 1], 1);
+            wordMap.set(tokenPair, tempMap);
+          } else {
+            tempMap.set(tokens[i + 2], 1);
+            wordMap.set(tokenPair, tempMap);
+          }
         } else {
           wordMap.set(tokenPair, tempMap);
         }
@@ -95,7 +146,7 @@ const secondOrderChain = (tokens: Array<string>): tokensMap => {
   return wordMap;
 };
 
-const generator = (words: tokensMap, start: string): string => {
+const generator = (words: tokensMap, start: string = "<START> <START>"): string => {
   if (start === "" || start === undefined) {
     throw new Error("Start can't be empty!");
   }
@@ -106,16 +157,12 @@ const generator = (words: tokensMap, start: string): string => {
 
   let lastTwoTokens = startTokens.slice(-2);
 
-  console.log("last two: " + lastTwoTokens);
-
   const probablityArr: Array<string> = [];
   let nextCount = 0;
   let out: Array<string> = lastTwoTokens;
   let steps = 0;
 
-  console.log("out: " + out);
-
-  while (lastTwoTokens[lastTwoTokens.length - 1] !== "<END>") {
+  while (lastTwoTokens[lastTwoTokens.length - 1] !== Tokens.End) {
     steps++;
 
     if (steps > 100) {
@@ -137,7 +184,7 @@ const generator = (words: tokensMap, start: string): string => {
     }
 
     const nextWord = probablityArr[Math.floor(Math.random() * nextCount)];
-    if (nextWord === "<END>") return out.join(" ");
+    if (nextWord === Tokens.End) return out.join(" ");
     console.log({
       lastTwoTokens,
       nextTokens,
@@ -153,8 +200,8 @@ const generator = (words: tokensMap, start: string): string => {
   return out.join(" ");
 };
 
-console.dir(generator(secondOrderChain(tokenizer()), "It can"), { maxArrayLength: null });
+const map = generator(secondOrderChain(tokenizer()), "it has");
 
-// console.log(secondOrderChain(tokenizer()));
+console.log(map);
 
-// console.log(generator(secondOrderChain(tokenizer()), "from the"));
+// console.dir(secondOrderChain(tokenizer()), { maxArrayLength: null });
