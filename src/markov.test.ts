@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { tokenizer } from "./markov.js";
+import { tokenizer } from "./tokenizer.js";
 
 describe("tokenizer", () => {
   test("tokenizes punctuation", () => {
