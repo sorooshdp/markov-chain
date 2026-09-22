@@ -91,7 +91,11 @@ export const tokenizer = (input: string | undefined = undefined, datasetName: st
     }
     if (i + 1 >= chars.length) {
       if (word !== "") {
-        tokens.push(word.slice(0, -1), Tokens.End);
+        if (word.endsWith(".")) {
+          tokens.push(word.slice(0, -1), Tokens.End);
+        } else {
+          tokens.push(word, Tokens.End);
+        }
         word = "";
       } else {
         tokens.push(Tokens.End);
