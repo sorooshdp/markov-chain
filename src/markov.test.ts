@@ -1,48 +1,107 @@
 import { describe, expect, test } from "vitest";
-import { tokenizer } from "./tokenizer.js";
+import { createMarkovChain } from "./markov.js";
 
-describe("tokenizer", () => {
-  test("tokenizes punctuation", () => {
-    const res = tokenizer("Hello, world!");
+describe("createMarkovChain", () => {
+  test("creates a first-order chain", () => {
+    const tokens = [
+      "<START>",
+      "I",
+      "like",
+      "cats",
+      "<END>",
+    ];
 
-    expect(res).toEqual(["<START>", "Hello", "<COMMA>", "world", "<EXCLAMATION>", "<END>"]);
+    const result = createMarkovChain(tokens, 1);
+
+    expect(result).toEqual(
+      new Map([
+        ["<START>", new Map([["I", 1]])],
+        ["I", new Map([["like", 1]])],
+        ["like", new Map([["cats", 1]])],
+        ["cats", new Map([["<END>", 1]])],
+      ]),
+    );
   });
-});
 
-test("handles newlines", () => {
-    const result = tokenizer("Hello.\nThis is another sentence.");
+  test("counts multiple transitions from the same state", () => {
+    const tokens = [
+      "<START>",
+      "I",
+      "like",
+      "cats",
+      "<END>",
+      "<START>",
+      "I",
+      "like",
+      "dogs",
+      "<END>",
+    ];
 
-    expect(result).toEqual([
-        "<START>",
-        "Hello",
-        "<END>",
-        "<START>",
-        "This",
-        "is",
-        "another",
-        "sentence",
-        "<END>",
-    ]);
-});
+    const result = createMarkovChain(tokens, 1);
 
-test("handles contractions", () => {
-    const result = tokenizer("It's working. I don't know.");
+    expect(result.get("I")).toEqual(
+      new Map([
+        ["like", 2],
+      ]),
+    );
 
-    expect(result).toEqual([
-        "<START>",
-        "It's",
-        "working",
-        "<END>",
-        "<START>",
-        "I",
-        "don't",
-        "know",
-        "<END>",
-    ]);
-});
+    expect(result.get("like")).toEqual(
+      new Map([
+        ["cats", 1],
+        ["dogs", 1],
+      ]),
+    );
+  });
 
-test("doesn't produce empty tokens", () => {
-    const result = tokenizer("Hello,   world!");
+  test("creates a second-order chain", () => {
+    const tokens = [
+      "<START>",
+      "I",
+      "like",
+      "cats",
+      "<END>",
+    ];
 
-    expect(result).not.toContain("");
+    const result = createMarkovChain(tokens, 2);
+
+    expect(result).toEqual(
+      new Map([
+        ["<START> I", new Map([["like", 1]])],
+        ["I like", new Map([["cats", 1]])],
+        ["like cats", new Map([["<END>", 1]])],
+      ]),
+    );
+  });
+
+  test("counts transitions for the same second-order state", () => {
+    const tokens = [
+      "<START>",
+      "I",
+      "like",
+      "cats",
+      "<END>",
+      "<START>",
+      "I",
+      "like",
+      "dogs",
+      "<END>",
+    ];
+
+    const result = createMarkovChain(tokens, 2);
+
+    expect(result.get("I like")).toEqual(
+      new Map([
+        ["cats", 1],
+        ["dogs", 1],
+      ]),
+    );
+  });
+
+  test("rejects an order smaller than 1", () => {
+    const tokens = ["<START>", "Hello", "<END>"];
+
+    expect(() => createMarkovChain(tokens, 0)).toThrow(
+      "Order must be bigger than zero!",
+    );
+  });
 });
