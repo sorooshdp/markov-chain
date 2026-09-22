@@ -1,72 +1,92 @@
-import { Tokens, tokensMap } from "./markov.js";
+import { Tokens, MarkovChain } from "./markov.js";
+import { MarkovModel } from "./model.js";
+import { tokenizer } from "./tokenizer.js";
 
-export const generator = (words: tokensMap, start: string = "<START> <START>"): string => {
-  if (start === "" || start === undefined) {
-    throw new Error("Start can't be empty!");
-  }
-  const startTokens: Array<string> = start.split(" ");
-  if (startTokens.length < 2) {
-    throw new Error("Give an starting sentence with more than two words!");
-  }
-
-  let lastTwoTokens = startTokens.slice(-2);
-
-  const probabilityArr: Array<string> = [];
-  let nextCount = 0;
-  let out: Array<string> = lastTwoTokens;
-  let steps = 0;
-
-  while (lastTwoTokens[lastTwoTokens.length - 1] !== Tokens.End) {
-    steps++;
-
-    if (steps > 100) {
-      console.log("Probably stuck!");
-      console.log("Current state:", lastTwoTokens);
-      return out.join(" ");
+const getContext = (tokens: Array<string>, order: number): Array<string> => {
+  const context: Array<string> = [];
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (tokens[i] !== Tokens.End) {
+      context.push(tokens[i]);
     }
-    const nextTokens = words.get(lastTwoTokens.join(" "));
-    if (nextTokens) {
-      nextTokens.forEach((v, k) => {
-        nextCount += v;
+    if (context.length === order) return context.reverse();
+  }
+  return context.reverse();
+};
 
-        for (let i = 0; i < v; i++) {
-          probabilityArr.push(k);
-        }
-      });
+const renderOutput = (output: Array<string>): string => {
+  let out: string = "";
+  for (const [index, token] of output.entries()) {
+    if (token === Tokens.End) {
+      out += ". ";
+    } else if (token === Tokens.Question) {
+      out += "? ";
+      if (index === output.length - 2) return out;
+    } else if (token === Tokens.Comma) {
+      out += ", ";
+    } else if (token === Tokens.Exclamation) {
+      out += "! ";
+      if (index === output.length - 2) return out;
     } else {
-      return out.join(" ");
+      out += ` ${token}`;
     }
-
-    let nextWord = probabilityArr[Math.floor(Math.random() * nextCount)];
-
-    switch (nextWord) {
-      case Tokens.Comma:
-        nextWord = ","
-        break;
-      case Tokens.Exclamation:
-        nextWord = "!"
-        break;
-      case Tokens.Question:
-        nextWord = "?"
-      case Tokens.End:
-        return out.join(" ")
-
-      default:
-        break;
-    }
-
-    // console.log({
-    //   lastTwoTokens,
-    //   nextTokens,
-    //   nextCount,
-    //   nextWord,
-    // });
-    
-    out.push(nextWord);
-    probabilityArr.splice(0, probabilityArr.length);
-    nextCount = 0;
-    lastTwoTokens = out.slice(-2);
   }
+  return out;
+};
 
-  return out.join(" ");
+export const generator = (model: MarkovModel, start: string): string => {
+  const startTokens: Array<string> = tokenizer(start);
+  if (startTokens.length < model.order) {
+    throw new Error("Starting sentace should have as many tokens as the order");
+  }
+  const markovMap: MarkovChain = model.chain;
+  let context = getContext(startTokens, model.order);
+  let steps: number = 0;
+  let stepsLimit: number = 1000;
+  let out: Array<string> = [...context];
+
+  while (true) {
+    steps++;
+    if (steps > stepsLimit) {
+      console.log("Steps limit reached!");
+      return renderOutput(out);
+    }
+
+    if (markovMap.has(context.join(" "))) {
+      const nextTokens = markovMap.get(context.join(" "));
+      let totalWeight: number = 0;
+      let cumulativeWeight: number = 0;
+      let selectedToken: string = "";
+
+      if (!nextTokens) {
+        return renderOutput(out);
+      }
+
+      for (const count of nextTokens.values()) {
+        totalWeight += count;
+      }
+
+      const randomNum = Math.floor(Math.random() * totalWeight);
+
+      for (const [k, v] of nextTokens) {
+        cumulativeWeight += v;
+
+        if (randomNum < cumulativeWeight) {
+          selectedToken = k;
+          break;
+        }
+      }
+
+      if (selectedToken === "") {
+        return renderOutput(out);
+      } else if (selectedToken === Tokens.End) {
+        out.push(selectedToken);
+        return renderOutput(out);
+      } else {
+        out.push(selectedToken);
+        context = getContext(out, model.order);
+      }
+    } else {
+      return renderOutput(out);
+    }
+  }
 };
