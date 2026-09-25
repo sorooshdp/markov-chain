@@ -46,3 +46,9 @@ test("doesn't produce empty tokens", () => {
 
     expect(result).not.toContain("");
 });
+
+test("does not merge the last word of one line with the first word of the next", () => {
+  const result = tokenizer("hello\nworld.");
+ 
+  expect(result).toEqual(["<START>", "hello", "world", "<END>"]);
+});
