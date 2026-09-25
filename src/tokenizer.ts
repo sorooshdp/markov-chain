@@ -1,21 +1,8 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { Tokens } from "./markov.js";
 
-export const tokenizer = (input: string | undefined = undefined, datasetName: string = "train.txt"): Array<string> => {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+export const tokenizer = (text: string): Array<string> => {
   const tokens: Array<string> = [];
   let word: string = "";
-  let text: string;
-
-  if (input === undefined) {
-    const filePath = path.join(__dirname, `../datasets/${datasetName}`);
-    text = readFileSync(filePath, "utf-8");
-  } else {
-    text = input;
-  }
 
   const chars = text.split("");
 
@@ -90,6 +77,7 @@ export const tokenizer = (input: string | undefined = undefined, datasetName: st
         break;
     }
     if (i + 1 >= chars.length) {
+      // treat EOF as an implicit sentence boundary
       if (word !== "") {
         if (word.endsWith(".")) {
           tokens.push(word.slice(0, -1), Tokens.End);

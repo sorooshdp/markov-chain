@@ -1,8 +1,8 @@
-import { Tokens, MarkovChain } from "./markov.js";
-import { MarkovModel } from "./model.js";
+import { Tokens, type MarkovChain } from "./markov.js";
+import type { MarkovModel } from "./model.js";
 import { tokenizer } from "./tokenizer.js";
 
-const getContext = (tokens: Array<string>, order: number): Array<string> => {
+export const getContext = (tokens: Array<string>, order: number): Array<string> => {
   const context: Array<string> = [];
   for (let i = tokens.length - 1; i >= 0; i--) {
     if (tokens[i] !== Tokens.End) {
@@ -13,7 +13,7 @@ const getContext = (tokens: Array<string>, order: number): Array<string> => {
   return context.reverse();
 };
 
-const renderOutput = (output: Array<string>): string => {
+export const renderOutput = (output: Array<string>): string => {
   let out: string = "";
   for (const [index, token] of output.entries()) {
     if (token === Tokens.End) {
@@ -51,8 +51,9 @@ export const generator = (model: MarkovModel, start: string): string => {
       return renderOutput(out);
     }
 
-    if (markovMap.has(context.join(" "))) {
-      const nextTokens = markovMap.get(context.join(" "));
+    const mapEntry = context.join(" ");
+    if (markovMap.has(mapEntry)) {
+      const nextTokens = markovMap.get(mapEntry);
       let totalWeight: number = 0;
       let cumulativeWeight: number = 0;
       let selectedToken: string = "";
