@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync, Mode } from "node:fs";
 import type { MarkovModel, JsonModel } from "./model.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,5 +52,34 @@ export const loadModel = (modelName: string): MarkovModel => {
     };
   } catch (error) {
     throw new Error(`Error while reading file: ${path.join("models", `${modelName}.json`)} ${error}`);
+  }
+};
+
+export const delModel = (modelName: string): void => {
+  const indexPath = path.join("models", "index.json");
+  let models: ModelsIndex = [];
+  try {
+    if (existsSync(indexPath)) {
+      const indexJson = readFileSync(indexPath, "utf-8");
+      models = JSON.parse(indexJson);
+      models = models.filter((model) => model !== `${modelName}.json`);
+      writeFileSync(indexPath, JSON.stringify(models, null, 2), "utf-8");
+    }
+    unlinkSync(path.join("models", `${modelName}.json`));
+  } catch (e) {
+    throw new Error(`Error while deleteing file: ${path.join("models", `${modelName}.json`)} ${e}`);
+  }
+};
+
+export const listModels = (): ModelsIndex => {
+  const indexPath = path.join("models", "index.json");
+  try {
+    if (!existsSync(indexPath)) {
+      return [];
+    }
+    const indexJson = readFileSync(indexPath, "utf-8");
+    return JSON.parse(indexJson) as ModelsIndex;
+  } catch (e) {
+    throw new Error(`Error while listing models: ${indexPath} ${e}`);
   }
 };
