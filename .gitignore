@@ -1,6 +1,7 @@
 dist
 node_modules
 models
+src/playground.ts
 /.pnp
 .pnp.*
 .yarn/*
