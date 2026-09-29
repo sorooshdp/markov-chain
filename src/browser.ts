@@ -2,9 +2,10 @@ import { generator } from "./generator.js";
 import type { JsonModel, MarkovModel } from "./model.js";
 
 const form = document.getElementById("markov-form") as HTMLFormElement;
-const input = document.getElementById("user-input") as HTMLTextAreaElement;
+const input = document.getElementById("user-input") as HTMLInputElement;
 const output = document.getElementById("output") as HTMLDivElement;
 const selectModels = document.getElementById("select-model") as HTMLDivElement;
+const loadedModelDiv = document.getElementById("current-model-info") as HTMLDivElement;
 let loadedModel: MarkovModel;
 
 (async (): Promise<string[]> => {
@@ -57,6 +58,7 @@ const onModelSelectClick = async (event: PointerEvent) => {
   }
 
   loadedModel = await loadModelFromBrowser(target.textContent!);
+  loadedModelDiv.innerText = target.textContent;
 };
 
 selectModels.addEventListener("click", (e) => {

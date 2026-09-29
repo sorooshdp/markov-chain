@@ -1,6 +1,48 @@
 <!doctype html>
 
 <html lang="en">
-  <head> </head>
-  <h1>hello</h1>
+  <head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markov Chain Generator</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header>
+      <h1 class="main-header">Markov Chain Generator</h1>
+    </header>
+
+    <main>
+      <section id="model-selection">
+        <h2>Select Model</h2>
+        <div id="select-model"></div>
+      </section>
+
+      <section id="current-model">
+        <h2>Current Model</h2>
+        <div id="current-model-info">
+          No model selected
+        </div>
+      </section>
+
+      <section id="generator">
+
+        <form id="markov-form">
+          <input type="text" placeholder="Enter a starting sentence..." name="user-input" id="user-input"></input>
+          <button type="submit">Generate</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Output</h2>
+        <div id="output"></div>
+      </section>
+
+      <section id="model-visualization">
+        <h2>Model</h2>
+        <div id="model-graph"></div>
+      </section>
+    </main>
+  </body>
+  <script type="module" src="dist/browser.js"></script>
 </html>

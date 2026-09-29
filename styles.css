@@ -1,0 +1,125 @@
+:root {
+  --bg: #171714;
+  --surface: #22221e;
+  --surface-2: #2c2c27;
+
+  --text: #e4dfd3;
+  --muted: #9b978b;
+  --border: #555249;
+
+  --accent: #d0a84f;
+  --accent-dark: #a58232;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.65rem 0.8rem;
+
+  background: var(--surface);
+  color: var(--text);
+
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.9rem;
+  background: var(--surface-2);
+  color: var(--text);
+
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+button:hover {
+  background: var(--surface);
+  border-color: var(--accent-dark);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:active {
+  background: var(--accent-dark);
+  color: var(--bg);
+}
+
+.main-header {
+  text-align: center;
+}
+
+#select-model {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+#markov-form {
+  display: flex;
+  gap: 0.6rem;
+}
+
+#user-input {
+  flex: 1;
+  min-width: 0;
+}
+
+#markov-form button {
+  flex-shrink: 0;
+}
