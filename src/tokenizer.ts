@@ -1,95 +1,135 @@
 import { Tokens } from "./markov.js";
 
-export const tokenizer = (text: string): Array<string> => {
+const abbreviations = new Set(["Mr", "Mrs", "Ms", "Dr", "Prof", "Sr", "Jr", "St", "etc"]);
+
+const isAbbreviation = (word: string) => {
+  return abbreviations.has(word);
+};
+
+const lexer = (text: string): Array<string> => {
   const tokens: Array<string> = [];
-  let word: string = "";
+  let token: string = "";
 
-  const chars = text.split("");
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]!;
 
-  for (let i = 0; i < chars.length; i++) {
     if (i === 0) {
       tokens.push(Tokens.Start);
     }
-    switch (chars[i]) {
+
+    switch (char) {
       case ".":
-        if (chars[i + 1] === "\r" || chars[i + 1] === "\n") {
-          tokens.push(word, Tokens.End, Tokens.Start);
-          word = "";
-        } else {
-          word = word.concat(chars[i]);
+        if (token !== "") {
+          tokens.push(token, Tokens.Period);
+          token = "";
         }
         break;
 
       case "!":
-        if (chars[i + 1] === "\r" || chars[i + 1] === "\n") {
-          tokens.push(word, Tokens.Exclamation, Tokens.End, Tokens.Start);
-          word = "";
-        } else {
-          tokens.push(word, Tokens.Exclamation);
-          word = "";
+        if (token !== "") {
+          tokens.push(token, Tokens.Exclamation);
+          token = "";
         }
         break;
 
       case "?":
-        if (chars[i + 1] === "\r" || chars[i + 1] === "\n") {
-          tokens.push(word, Tokens.Question, Tokens.End, Tokens.Start);
-          word = "";
-        } else {
-          tokens.push(word, Tokens.Question);
-          word = "";
+        if (token !== "") {
+          tokens.push(token, Tokens.Question);
+          token = "";
         }
         break;
 
       case "'":
-        word = word.concat(chars[i]);
+        token += "'";
         break;
 
       case ",":
-        if (chars[i + 1] === "\r" || chars[i + 1] === "\n") {
-          tokens.push(word, Tokens.Comma, Tokens.End, Tokens.Start);
-          word = "";
-        } else {
-          tokens.push(word, Tokens.Comma);
-          word = "";
-        }
-        break;
-
-      case " ":
-        if (word === "") {
-          continue;
-        } else {
-          tokens.push(word);
-          word = "";
+        if (token !== "") {
+          tokens.push(token, Tokens.Comma);
+          token = "";
         }
         break;
 
       case "":
         continue;
 
-      case "\r":
-        continue;
+      case " ":
+        if (token !== "") {
+          tokens.push(token);
+          token = "";
+        }
+        break;
 
+      case "\r":
+      case "\t":
       case "\n":
-        continue;
+        if (token !== "") {
+          tokens.push(token);
+          token = "";
+        }
+        break;
 
       default:
-        word = word.concat(chars[i]);
+        token += char;
         break;
-    }
-    if (i + 1 >= chars.length) {
-      // treat EOF as an implicit sentence boundary
-      if (word !== "") {
-        if (word.endsWith(".")) {
-          tokens.push(word.slice(0, -1), Tokens.End);
-        } else {
-          tokens.push(word, Tokens.End);
-        }
-        word = "";
-      } else {
-        tokens.push(Tokens.End);
-      }
     }
   }
 
   return tokens;
+};
+
+const normalizer = (tokens: Array<string>): Array<string> => {
+  const normalizedTokens: Array<string> = [];
+  let i = 0;
+
+  while (i < tokens.length) {
+    const curr = tokens[i]!;
+    const prev = tokens[i - 1];
+    const next = tokens[i + 1];
+    const last = normalizedTokens[normalizedTokens.length - 1];
+
+    if (curr === Tokens.Period) {
+      // 3 . 14 -> 3.14
+      if (prev !== undefined && next !== undefined && /\d/.test(prev) && /\d/.test(next)) {
+        normalizedTokens[normalizedTokens.length - 1] = `${last}.${next}`;
+        i += 2;
+        continue;
+      }
+
+      // Dr . Smith -> Dr.
+      if (prev !== undefined && next !== undefined && isAbbreviation(prev)) {
+        normalizedTokens[normalizedTokens.length - 1] = `${last}.`;
+        i++;
+        continue;
+      }
+
+      // Otherwise, this is a sentence-ending period.
+      if (next !== undefined) {
+        normalizedTokens.push(Tokens.End, Tokens.Start);
+        i++;
+        continue;
+      } else {
+        normalizedTokens.push(Tokens.End);
+        break;
+      }
+    } else if (curr === Tokens.Exclamation || curr === Tokens.Question) {
+      if (next !== undefined) {
+        normalizedTokens.push(curr, Tokens.End, Tokens.Start);
+        i++;
+      } else {
+        normalizedTokens.push(curr, Tokens.End);
+        break;
+      }
+    } else {
+      normalizedTokens.push(curr);
+      i++;
+    }
+  }
+
+  return normalizedTokens;
+};
+
+export const tokenizer = (text: string): Array<string> => {
+  const tokens = lexer(text);
+  return normalizer(tokens);
 };
