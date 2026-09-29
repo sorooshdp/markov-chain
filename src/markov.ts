@@ -6,6 +6,7 @@ export enum Tokens {
   Comma = "<COMMA>",
   Exclamation = "<EXCLAMATION>",
   Question = "<QUESTION>",
+  Period = "<PERIOD>",
 }
 
 export const createMarkovChain = (tokens: Array<string>, order: number): MarkovChain => {
@@ -17,7 +18,7 @@ export const createMarkovChain = (tokens: Array<string>, order: number): MarkovC
   for (let i = 0; i < tokens.length; i++) {
     if (i + order < tokens.length) {
       const entry = tokens.slice(i, i + order).join(" ");
-      const nextToken: string = tokens[i + order];
+      const nextToken: string = tokens[i + order]!;
       if (chain.has(entry)) {
         const currEntry = chain.get(entry);
 
@@ -38,4 +39,3 @@ export const createMarkovChain = (tokens: Array<string>, order: number): MarkovC
 
   return chain;
 };
-

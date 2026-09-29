@@ -6,7 +6,7 @@ export const getContext = (tokens: Array<string>, order: number): Array<string> 
   const context: Array<string> = [];
   for (let i = tokens.length - 1; i >= 0; i--) {
     if (tokens[i] !== Tokens.End) {
-      context.push(tokens[i]);
+      context.push(tokens[i]!);
     }
     if (context.length === order) return context.reverse();
   }
