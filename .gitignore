@@ -9,3 +9,5 @@ src/playground.ts
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.vscode
+!datasets/
