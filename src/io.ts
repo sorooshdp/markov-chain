@@ -1,20 +1,29 @@
-import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync, Mode } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from "node:fs";
 import type { MarkovModel, JsonModel } from "./model.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+const MODELS_DIR = path.join(PROJECT_ROOT, "models");
+const DATASETS_DIR = path.join(PROJECT_ROOT, "datasets");
+const INDEX_PATH = path.join(MODELS_DIR, "index.json");
+
 type ModelsIndex = string[];
 
+const normalizeName = (name: string): string => (name.endsWith(".json") ? name.slice(0, -5) : name);
+
 export const readFile = (datasetName: string): string => {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const filePath = path.join(__dirname, `../datasets/${datasetName}`);
+  const filePath = path.join(DATASETS_DIR, `${datasetName}`);
   return readFileSync(filePath, "utf-8");
 };
 
 export const saveModel = (model: MarkovModel, modelName: string): void => {
-  mkdirSync("models", { recursive: true });
-  const fileName = `${modelName}-${model.order}.json`;
+  const name = normalizeName(modelName);
+
+  mkdirSync(MODELS_DIR, { recursive: true });
+  const fileName = `${name}-${model.order}.json`;
 
   const jsonModel = {
     order: model.order,
@@ -23,11 +32,10 @@ export const saveModel = (model: MarkovModel, modelName: string): void => {
   const json = JSON.stringify(jsonModel, null, 2);
   writeFileSync(path.join("models", `${fileName}`), json, "utf-8"); // save main model
 
-  const indexPath = path.join("models", "index.json");
   let models: ModelsIndex = [];
 
-  if (existsSync(indexPath)) {
-    const indexJson = readFileSync(indexPath, "utf-8");
+  if (existsSync(INDEX_PATH)) {
+    const indexJson = readFileSync(INDEX_PATH, "utf-8");
     models = JSON.parse(indexJson) as ModelsIndex;
   }
 
@@ -35,12 +43,13 @@ export const saveModel = (model: MarkovModel, modelName: string): void => {
     models.push(fileName);
   }
 
-  writeFileSync(indexPath, JSON.stringify(models, null, 2), "utf-8"); //update the index of models
+  writeFileSync(INDEX_PATH, JSON.stringify(models, null, 2), "utf-8"); //update the index of models
 };
 
 export const loadModel = (modelName: string): MarkovModel => {
+  const name = normalizeName(modelName);
   try {
-    const text = readFileSync(path.join("models", `${modelName}.json`), "utf-8");
+    const text = readFileSync(path.join(MODELS_DIR, `${name}.json`), "utf-8");
     const object = JSON.parse(text) as JsonModel;
     const chain = new Map(
       Object.entries(object.chain).map(([key, nextTokens]) => [key, new Map(Object.entries(nextTokens))]),
@@ -56,30 +65,29 @@ export const loadModel = (modelName: string): MarkovModel => {
 };
 
 export const delModel = (modelName: string): void => {
-  const indexPath = path.join("models", "index.json");
+  const name = normalizeName(modelName);
   let models: ModelsIndex = [];
   try {
-    if (existsSync(indexPath)) {
-      const indexJson = readFileSync(indexPath, "utf-8");
+    if (existsSync(INDEX_PATH)) {
+      const indexJson = readFileSync(INDEX_PATH, "utf-8");
       models = JSON.parse(indexJson);
-      models = models.filter((model) => model !== `${modelName}.json`);
-      writeFileSync(indexPath, JSON.stringify(models, null, 2), "utf-8");
+      models = models.filter((model) => model !== `${name}.json`);
+      writeFileSync(INDEX_PATH, JSON.stringify(models, null, 2), "utf-8");
     }
-    unlinkSync(path.join("models", `${modelName}.json`));
+    unlinkSync(path.join(MODELS_DIR, `${name}.json`));
   } catch (e) {
-    throw new Error(`Error while deleteing file: ${path.join("models", `${modelName}.json`)} ${e}`);
+    throw new Error(`Error while deleteing file: ${path.join(MODELS_DIR, `${name}.json`)} ${e}`);
   }
 };
 
 export const listModels = (): ModelsIndex => {
-  const indexPath = path.join("models", "index.json");
   try {
-    if (!existsSync(indexPath)) {
+    if (!existsSync(INDEX_PATH)) {
       return [];
     }
-    const indexJson = readFileSync(indexPath, "utf-8");
+    const indexJson = readFileSync(INDEX_PATH, "utf-8");
     return JSON.parse(indexJson) as ModelsIndex;
   } catch (e) {
-    throw new Error(`Error while listing models: ${indexPath} ${e}`);
+    throw new Error(`Error while listing models: ${INDEX_PATH} ${e}`);
   }
 };
