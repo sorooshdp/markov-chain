@@ -104,6 +104,38 @@ button:active {
   text-align: center;
 }
 
+.model-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.entry-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.entry-key {
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-val {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 #select-model {
   display: flex;
   flex-wrap: wrap;
@@ -122,4 +154,9 @@ button:active {
 
 #markov-form button {
   flex-shrink: 0;
+}
+
+#show-more {
+  margin-top: 0.75rem;
+  width: 100%;
 }

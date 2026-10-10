@@ -1,12 +1,17 @@
 import { generator } from "./generator.js";
-import type { JsonModel, MarkovModel } from "./model.js";
+import type { MarkovModel } from "./model.js";
 
 const form = document.getElementById("markov-form") as HTMLFormElement;
 const input = document.getElementById("user-input") as HTMLInputElement;
 const output = document.getElementById("output") as HTMLDivElement;
 const selectModels = document.getElementById("select-model") as HTMLDivElement;
 const loadedModelDiv = document.getElementById("current-model-info") as HTMLDivElement;
+const entriesEl = document.getElementById("model-entries") as HTMLDivElement;
+const showMoreBtn = document.getElementById("show-more") as HTMLButtonElement;
+const PAGE_SIZE = 50;
+
 let loadedModel: MarkovModel;
+let currentModelIterator: IterableIterator<[string, Map<string, number>]> | null = null;
 
 (async (): Promise<string[]> => {
   const res = await fetch("../models/index.json");
@@ -31,23 +36,75 @@ let loadedModel: MarkovModel;
   return modelNamesArr;
 })();
 
-const loadModelFromBrowser = async (modelName: string): Promise<MarkovModel> => {
-  const res = await fetch(`../models/${modelName}`);
+const loadModelViaWorker = async (modelName: string): Promise<MarkovModel> => {
+  return new Promise((resolve, reject) => {
+    const workerUrl = new URL("./worker.js", import.meta.url);
+    const worker = new Worker(workerUrl, { type: "module" });
 
-  if (!res.ok) {
-    throw new Error(`Failed to load model: ${res.status}`);
+    worker.onmessage = (e) => {
+      if (e.data.success) {
+        resolve({ order: e.data.order, chain: e.data.chain });
+      } else {
+        reject(new Error(e.data.error));
+      }
+
+      worker.terminate();
+    };
+
+    worker.onerror = (err) => {
+      reject(err);
+      worker.terminate();
+    };
+
+    const targetUrl = new URL(`models/${modelName}`, window.location.href).href;
+
+    worker.postMessage(targetUrl);
+  });
+};
+
+const renderModel = (model: MarkovModel, limit: number = 50) => {
+  entriesEl.innerHTML = "";
+  currentModelIterator = model.chain.entries();
+  renderNextPage();
+};
+
+const renderNextPage = () => {
+  if (!currentModelIterator) return;
+  let count = 0;
+  let result = currentModelIterator.next();
+
+  while (!result.done && count < PAGE_SIZE) {
+    const [key, nextMap] = result.value;
+
+    const row = document.createElement("div");
+    row.className = "entry-box";
+
+    const entryKey = document.createElement("span");
+    entryKey.className = "entry-key";
+    entryKey.innerText = key;
+    row.appendChild(entryKey);
+
+    for (const [nextMapKey, tokenCount] of nextMap) {
+      const entryVal = document.createElement("span");
+      entryVal.className = "entry-val";
+      entryVal.innerText = `${nextMapKey} (count:${tokenCount})`;
+      row.appendChild(entryVal);
+    }
+
+    entriesEl.appendChild(row);
+
+    count++;
+    if (count < PAGE_SIZE) {
+      result = currentModelIterator.next();
+    }
   }
 
-  const obj = (await res.json()) as JsonModel;
-
-  const chain = new Map(
-    Object.entries(obj.chain).map(([key, nextTokens]) => [key, new Map(Object.entries(nextTokens))]),
-  );
-
-  return {
-    order: obj.order,
-    chain,
-  };
+  // Hide the button if we've exhausted the Map
+  if (result.done) {
+    showMoreBtn.hidden = true;
+  } else {
+    showMoreBtn.hidden = false;
+  }
 };
 
 const onModelSelectClick = async (event: PointerEvent) => {
@@ -57,9 +114,25 @@ const onModelSelectClick = async (event: PointerEvent) => {
     return;
   }
 
-  loadedModel = await loadModelFromBrowser(target.textContent!);
-  loadedModelDiv.innerText = target.textContent;
+  const modelName = target.textContent;
+
+  loadedModelDiv.innerText = `Loading ${modelName}...`;
+  entriesEl.innerHTML = "";
+  showMoreBtn.hidden = true;
+
+  try {
+    loadedModel = await loadModelViaWorker(target.textContent!);
+    renderModel(loadedModel);
+    loadedModelDiv.innerText = target.textContent;
+  } catch (error) {
+    loadedModelDiv.innerText = "Failed to load model.";
+    console.error(error);
+  }
 };
+
+showMoreBtn.addEventListener("click", () => {
+  renderNextPage();
+});
 
 selectModels.addEventListener("click", (e) => {
   onModelSelectClick(e);
