@@ -26,17 +26,23 @@ export const renderOutput = (output: Array<string>): string => {
     } else if (token === Tokens.Exclamation) {
       out += "! ";
       if (index === output.length - 2) return out;
+    } else if (token === Tokens.Start) {
+      out += "_";
     } else {
-      out += ` ${token}`;
+      if (index === 0) {
+        out += `${token}`;
+      } else {
+        out += ` ${token}`;
+      }
     }
   }
-  return out;
+  return out.trim();
 };
 
-export const generator = (model: MarkovModel, start: string): string => {
+export const generator = (model: MarkovModel, start: string, rng: () => number = () => 0): string => {
   const startTokens: Array<string> = tokenizer(start);
   if (startTokens.length < model.order) {
-    throw new Error("Starting sentace should have as many tokens as the order");
+    throw new Error("Starting sentence should have as many tokens as the order");
   }
   const markovMap: MarkovChain = model.chain;
   let context = getContext(startTokens, model.order);
@@ -53,14 +59,10 @@ export const generator = (model: MarkovModel, start: string): string => {
 
     const mapEntry = context.join(" ");
     if (markovMap.has(mapEntry)) {
-      const nextTokens = markovMap.get(mapEntry);
+      const nextTokens = markovMap.get(mapEntry)!;
       let totalWeight: number = 0;
       let cumulativeWeight: number = 0;
       let selectedToken: string = "";
-
-      if (!nextTokens) {
-        return renderOutput(out);
-      }
 
       for (const count of nextTokens.values()) {
         totalWeight += count;

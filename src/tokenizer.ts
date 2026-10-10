@@ -17,6 +17,17 @@ const lexer = (text: string): Array<string> => {
       tokens.push(Tokens.Start);
     }
 
+    if (i + 1 >= text.length) {
+      if (char === "." && token !== "") {
+        tokens.push(token, Tokens.End);
+      } else {
+        token += char;
+        tokens.push(token, Tokens.End);
+      }
+
+      break;
+    }
+
     switch (char) {
       case ".":
         if (token !== "") {
