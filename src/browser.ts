@@ -8,6 +8,8 @@ const selectModels = document.getElementById("select-model") as HTMLDivElement;
 const loadedModelDiv = document.getElementById("current-model-info") as HTMLDivElement;
 const entriesEl = document.getElementById("model-entries") as HTMLDivElement;
 const showMoreBtn = document.getElementById("show-more") as HTMLButtonElement;
+const tempInput = document.getElementById("temperature") as HTMLInputElement;
+const tempDisplay = document.getElementById("temp-display") as HTMLSpanElement;
 const PAGE_SIZE = 50;
 
 let loadedModel: MarkovModel;
@@ -140,9 +142,22 @@ selectModels.addEventListener("click", (e) => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const start = input.value;
-  console.log(input.value);
 
-  console.log("sent to generator");
-  output.innerText = generator(loadedModel, start);
+  if (!loadedModel) {
+    output.innerText = "Please select a model first.";
+    return;
+  }
+
+  const start = input.value;
+  const temperature = parseFloat(tempInput.value);
+
+  try {
+    output.innerText = generator(loadedModel, start, temperature);
+  } catch (error) {
+    output.innerText = `Error: ${(error as Error).message}`;
+  }
+});
+
+tempInput.addEventListener("input", () => {
+  tempDisplay.innerText = parseFloat(tempInput.value).toFixed(1);
 });

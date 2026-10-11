@@ -39,7 +39,12 @@ export const renderOutput = (output: Array<string>): string => {
   return out.trim();
 };
 
-export const generator = (model: MarkovModel, start: string, rng: () => number = () => 0): string => {
+export const generator = (
+  model: MarkovModel,
+  start: string,
+  temperature: number = 1.0,
+  rng: () => number = Math.random,
+): string => {
   const startTokens: Array<string> = tokenizer(start);
   if (startTokens.length < model.order) {
     throw new Error("Starting sentence should have as many tokens as the order");
@@ -64,14 +69,20 @@ export const generator = (model: MarkovModel, start: string, rng: () => number =
       let cumulativeWeight: number = 0;
       let selectedToken: string = "";
 
-      for (const count of nextTokens.values()) {
+      const adjustedWeights = new Map<string, number>();
+
+      const safeTemp = Math.max(0.01, temperature);
+
+      for (const [k, count] of nextTokens) {
+        const weight = Math.pow(count, 1 / safeTemp);
+        adjustedWeights.set(k, weight);
         totalWeight += count;
       }
 
-      const randomNum = Math.floor(Math.random() * totalWeight);
+      const randomNum = rng() * totalWeight;
 
-      for (const [k, v] of nextTokens) {
-        cumulativeWeight += v;
+      for (const [k, weight] of nextTokens) {
+        cumulativeWeight += weight;
 
         if (randomNum < cumulativeWeight) {
           selectedToken = k;
