@@ -34,6 +34,18 @@ main {
   gap: 1.5rem;
 }
 
+section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--surface-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 button,
 input,
 textarea,
@@ -144,6 +156,17 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 
 .main-header {
   text-align: center;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em; 
+}
+
+.app-description {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+  line-height: 1.6;
 }
 
 .model-entries {
@@ -155,10 +178,10 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 
 .entry-box {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -166,16 +189,61 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 
 .entry-key {
   color: var(--accent);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.entry-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.entry-values.collapsed {
+  max-height: 64px; /* Roughly 2 rows of tags */
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  position: relative;
+}
+
+.entry-values.collapsed::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(transparent, var(--surface));
+  pointer-events: none; /* Allows clicking tokens underneath */
 }
 
 .entry-val {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.toggle-btn {
+  align-self: flex-start; /* Keeps the button from stretching */
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.toggle-btn:hover {
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+}
+
+.toggle-btn:focus-visible {
+  outline: none;
+  text-decoration: underline;
 }
 
 .form-row {
@@ -192,6 +260,46 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .controls label {
   cursor: help;
   min-width: 140px;
+}
+
+.output-box {
+  min-height: 60px; /* Prevents layout shift before generation */
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent); 
+  border-radius: 4px;
+  
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.output-box:empty::before {
+  content: "Generated text will appear here...";
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.95rem;
+}
+
+.empty-state {
+  width: 100%;
+  padding: 1.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.empty-state code {
+  background: var(--surface-2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 #select-model {

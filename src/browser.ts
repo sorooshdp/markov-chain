@@ -18,26 +18,43 @@ let loadedModel: MarkovModel;
 let currentModelIterator: IterableIterator<[string, Map<string, number>]> | null = null;
 
 (async (): Promise<string[]> => {
-  const res = await fetch("../models/index.json");
+  try {
+    const res = await fetch("../models/index.json");
 
-  if (!res.ok) {
-    throw new Error(`Failed to load model names: ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load model names: ${res.status}`);
+    }
+
+    const obj = await res.json();
+    const modelNamesArr: string[] = new Array(...obj);
+
+    if (modelNamesArr.length === 0) {
+      selectModels.innerHTML = `
+      <div class="empty-state">
+          No models found. Add text files to <code>datasets/</code> and run <br>
+          <code>node dist/cli.js train &lt;filename&gt; &lt;order&gt;</code> to get started.
+      </div>
+    `;
+    }
+    const frag = document.createDocumentFragment();
+
+    for (const index in modelNamesArr) {
+      const modelButton = document.createElement("button");
+      modelButton.textContent = modelNamesArr[index]!;
+      modelButton.className = `model-button-${index}`;
+      frag.appendChild(modelButton);
+    }
+
+    selectModels.appendChild(frag);
+
+    return modelNamesArr;
+  } catch (error) {
+    selectModels.innerHTML = `
+      <div class="empty-state">
+        Model index not found. Train a model via CLI first.
+      </div>`;
+    return [];
   }
-
-  const obj = await res.json();
-  const modelNamesArr: string[] = new Array(...obj);
-  const frag = document.createDocumentFragment();
-
-  for (const index in modelNamesArr) {
-    const modelButton = document.createElement("button");
-    modelButton.textContent = modelNamesArr[index]!;
-    modelButton.className = `model-button-${index}`;
-    frag.appendChild(modelButton);
-  }
-
-  selectModels.appendChild(frag);
-
-  return modelNamesArr;
 })();
 
 const loadModelViaWorker = async (modelName: string): Promise<MarkovModel> => {
@@ -133,7 +150,7 @@ const renderGraph = (model: MarkovModel, maxEdges: number = 500) => {
         color: "#e4dfd3",
         size: 14,
         background: "#22221e",
-        strokeWidth: 2, 
+        strokeWidth: 2,
         strokeColor: "#2c2c27",
       },
       color: { border: "#d0a84f", background: "#2c2c27" },
@@ -142,8 +159,8 @@ const renderGraph = (model: MarkovModel, maxEdges: number = 500) => {
       font: {
         color: "#9b978b",
         size: 12,
-        align: "horizontal", 
-        background: "#22221e", 
+        align: "horizontal",
+        background: "#22221e",
       },
       color: { color: "#555249", highlight: "#d0a84f" },
       smooth: { type: "continuous" },
@@ -155,14 +172,14 @@ const renderGraph = (model: MarkovModel, maxEdges: number = 500) => {
         centralGravity: 0.005, // Very weak center pull so the graph can expand outward
         springLength: 250, // Much longer edges to space out the text (was 150)
         springConstant: 0.04,
-        avoidOverlap: 1, 
+        avoidOverlap: 1,
       },
       maxVelocity: 15,
       minVelocity: 1,
       timestep: 0.35,
       stabilization: {
         enabled: true,
-        iterations: 250, 
+        iterations: 250,
         updateInterval: 25,
         fit: true,
       },
@@ -188,11 +205,30 @@ const renderNextPage = () => {
     entryKey.innerText = key;
     row.appendChild(entryKey);
 
+    const valuesContainer = document.createElement("div");
+    valuesContainer.className = "entry-values collapsed";
+
     for (const [nextMapKey, tokenCount] of nextMap) {
       const entryVal = document.createElement("span");
       entryVal.className = "entry-val";
       entryVal.innerText = `${nextMapKey} (count:${tokenCount})`;
-      row.appendChild(entryVal);
+      valuesContainer.appendChild(entryVal);
+    }
+
+    row.appendChild(valuesContainer);
+
+    if (nextMap.size > 4) {
+      const toggleBtn = document.createElement("button");
+      toggleBtn.className = "toggle-btn";
+      toggleBtn.innerText = "Show all";
+      toggleBtn.type = "button";
+      
+      toggleBtn.addEventListener("click", () => {
+        valuesContainer.classList.toggle("collapsed");
+        toggleBtn.innerText = valuesContainer.classList.contains("collapsed") ? "Show all" : "Show less";
+      });
+      
+      row.appendChild(toggleBtn);
     }
 
     entriesEl.appendChild(row);
