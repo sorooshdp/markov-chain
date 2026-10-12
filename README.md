@@ -4,12 +4,17 @@ A small TypeScript project that trains Markov-chain language models from text an
 
 ## Setup
 
+1. Place your raw text datasets (`.txt` files) into the `datasets/` directory.
+2. Install dependencies and build the project:
+
 ```bash
 pnpm install
 pnpm build
 ```
 
 ## CLI
+
+Before using the UI, you must train a model. Models are saved as JSON files in the `models/` directory.
 
 ```bash
 # Train a model from a file in datasets/
@@ -21,8 +26,6 @@ node dist/cli.js models
 # Delete a saved model
 node dist/cli.js del small-dataset-2
 ```
-
-Models are saved as JSON files in `models/`.
 
 ## Browser
 
