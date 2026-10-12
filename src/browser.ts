@@ -1,6 +1,8 @@
 import { generator } from "./generator.js";
 import type { MarkovModel } from "./model.js";
 
+declare const vis: any;
+
 const form = document.getElementById("markov-form") as HTMLFormElement;
 const input = document.getElementById("user-input") as HTMLInputElement;
 const output = document.getElementById("output") as HTMLDivElement;
@@ -70,6 +72,106 @@ const renderModel = (model: MarkovModel, limit: number = 50) => {
   renderNextPage();
 };
 
+const renderGraph = (model: MarkovModel, maxEdges: number = 500) => {
+  const container = document.getElementById("network-graph");
+  if (!container) {
+    console.error("Could not find #network-graph container in DOM.");
+    return;
+  }
+
+  const nodes = new Map<string, any>();
+  const edges: any[] = [];
+  let edgeCount = 0;
+
+  console.log(`Rendering graph... Chain size: ${model.chain.size}`);
+
+  for (const [currentState, nextTokens] of model.chain.entries()) {
+    if (edgeCount >= maxEdges) break;
+
+    if (!nodes.has(currentState)) {
+      nodes.set(currentState, { id: currentState, label: currentState, title: "state" });
+    }
+
+    for (const [nextToken, weight] of nextTokens) {
+      if (edgeCount >= maxEdges) break;
+
+      // Calculate the literal Next State based on the Markov order
+      let nextState = nextToken;
+      if (model.order > 1) {
+        const stateTokens = currentState.split(" ");
+        stateTokens.shift();
+        stateTokens.push(nextToken);
+        nextState = stateTokens.join(" ");
+      }
+
+      if (!nodes.has(nextState)) {
+        nodes.set(nextState, { id: nextState, label: nextState });
+      }
+
+      edges.push({
+        from: currentState,
+        to: nextState,
+        value: weight, // vis.js uses 'value' to determine edge thickness
+        label: nextToken, // Show the generated token on the line
+        arrows: "to",
+      });
+
+      edgeCount++;
+    }
+  }
+
+  const data = {
+    nodes: new vis.DataSet(Array.from(nodes.values())),
+    edges: new vis.DataSet(edges),
+  };
+
+  const options = {
+    nodes: {
+      shape: "dot",
+      size: 16,
+      font: {
+        color: "#e4dfd3",
+        size: 14,
+        background: "#22221e",
+        strokeWidth: 2, 
+        strokeColor: "#2c2c27",
+      },
+      color: { border: "#d0a84f", background: "#2c2c27" },
+    },
+    edges: {
+      font: {
+        color: "#9b978b",
+        size: 12,
+        align: "horizontal", 
+        background: "#22221e", 
+      },
+      color: { color: "#555249", highlight: "#d0a84f" },
+      smooth: { type: "continuous" },
+    },
+    physics: {
+      solver: "forceAtlas2Based",
+      forceAtlas2Based: {
+        gravitationalConstant: -250, // Base repulsion
+        centralGravity: 0.005, // Very weak center pull so the graph can expand outward
+        springLength: 250, // Much longer edges to space out the text (was 150)
+        springConstant: 0.04,
+        avoidOverlap: 1, 
+      },
+      maxVelocity: 15,
+      minVelocity: 1,
+      timestep: 0.35,
+      stabilization: {
+        enabled: true,
+        iterations: 250, 
+        updateInterval: 25,
+        fit: true,
+      },
+    },
+  };
+
+  new vis.Network(container, data, options);
+};
+
 const renderNextPage = () => {
   if (!currentModelIterator) return;
   let count = 0;
@@ -125,6 +227,7 @@ const onModelSelectClick = async (event: PointerEvent) => {
   try {
     loadedModel = await loadModelViaWorker(target.textContent!);
     renderModel(loadedModel);
+    renderGraph(loadedModel);
     loadedModelDiv.innerText = target.textContent;
   } catch (error) {
     loadedModelDiv.innerText = "Failed to load model.";

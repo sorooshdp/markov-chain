@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markov Chain Generator</title>
     <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="public/vis-network.min.js"></script>
   </head>
   <body>
     <header>
@@ -45,6 +46,11 @@
       <section>
         <h2>Output</h2>
         <div id="output"></div>
+      </section>
+
+      <section id="visualization">
+        <h2>State Graph (Top Transitions)</h2>
+        <div id="network-graph"></div>
       </section>
 
       <section id="model-preview">
